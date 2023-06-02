@@ -39,7 +39,7 @@ class UltrasoundProcessing:
         layout = [
             [Psg.T('Select a recording')],
             [Psg.In(k='-INP-FILE-PATH-', expand_x=True, change_submits=True, disabled=True),
-             Psg.FolderBrowse(initial_folder=str(self.cwd.parent.absolute()) + '/Generated/Videos')],
+             Psg.FolderBrowse(initial_folder=str(self.cwd.parent.absolute()))],
             [Psg.T(k='-TXT-DETAILS-', expand_x=True),
              Psg.T(k='-TXT-INDEX-', size=10, justification='r')],
             [Psg.HSep()],
