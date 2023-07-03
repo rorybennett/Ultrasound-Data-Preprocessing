@@ -7,11 +7,12 @@ memory images are worked on, but permanent alterations are done to the disk imag
 import os
 from datetime import timedelta
 from pathlib import Path
+
+import PySimpleGUI as Psg
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 from natsort import natsorted
-import PySimpleGUI as Psg
 from skimage.metrics import structural_similarity
 
 # Graph dimensions for display.
@@ -154,27 +155,55 @@ class UltrasoundProcessing:
             f"Scan width: {self.window['-INP-WIDTH-'].get()} mm.")
         self.window.refresh()
 
-        with open(self.recording_path + '/data.txt', 'r') as file:
-            self.data = file.readlines()
-
         data_temp = []
 
-        for row in self.data:
-            values = row.split(',')
-            values[11] = str(self.frames[0].shape[1])
-            values[12] = str(self.frames[0].shape[0])
-            values[13] = ']depths['
-            values[14] = self.window['-INP-HEIGHT-'].get()
-            values[15] = self.window['-INP-WIDTH-'].get()
-            try:
-                values[16] = ']'
-            except IndexError:
+        try:
+            with open(self.recording_path + '/data.txt', 'r') as file:
+                self.data = file.readlines()
+
+            for row in self.data:
+                values = row.split(',')
+                values[11] = str(self.frames[0].shape[1])
+                values[12] = str(self.frames[0].shape[0])
+                values[13] = ']depths['
+                values[14] = self.window['-INP-HEIGHT-'].get()
+                values[15] = self.window['-INP-WIDTH-'].get()
+                try:
+                    values[16] = ']'
+                except IndexError:
+                    values.append(']')
+
+                data_temp.append(values)
+
+
+        except FileNotFoundError as e:
+            self.window['-TXT-INFO-'].update(
+                f"{self.window['-TXT-INFO-'].get()}\n"
+                f'  data.txt does not exist, creating blank data.')
+
+            for name in self.names:
+                values = []
+                values.append(name)
+                values.append(':acc[')
+                values.append('0')
+                values.append('0')
+                values.append('0')
+                values.append(']q[')
+                values.append('0')
+                values.append('0')
+                values.append('0')
+                values.append('0')
+                values.append(']dimensions[')
+                values.append(str(self.frames[0].shape[1]))
+                values.append(str(self.frames[0].shape[0]))
+                values.append(']depths[')
+                values.append(self.window['-INP-HEIGHT-'].get())
+                values.append(self.window['-INP-WIDTH-'].get())
                 values.append(']')
 
-            data_temp.append(values)
+                data_temp.append(values)
 
         self.data = data_temp
-
         with open(str(self.recording_path) + '/data.txt', 'w') as file:
             for row in self.data:
                 file.write(f"{','.join(row)}\n")
@@ -451,8 +480,11 @@ class UltrasoundProcessing:
             cf = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
             self.frames.append(cf)
 
-        duration = int(self.names[-1].split('.', 1)[0].split('-', 1)[1]) - int(
-            self.names[0].split('.', 1)[0].split('-', 1)[1])
+        try:
+            duration = int(self.names[-1].split('.', 1)[0].split('-', 1)[1]) - int(
+                self.names[0].split('.', 1)[0].split('-', 1)[1])
+        except IndexError as e:
+            duration = 1
 
         self.window['-TXT-DETAILS-'].update(
             f"Total Frames: {len(self.frames)}\t\t"
